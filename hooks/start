@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e
+set -x
+
+cd /srv/http/hello-juju
+gunicorn3 --daemon --bind 0.0.0.0:80 --pid hello-juju.pid -w 2 hello_juju:app
+
+open-port 80
+status-set active
