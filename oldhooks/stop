@@ -1,8 +1,0 @@
-#!/bin/bash
-
-set -e
-set -x
-
-cd /srv/http/hello-juju
-kill `cat hello-juju.pid`
-rm hello-juju.pid
