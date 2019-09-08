@@ -11,12 +11,12 @@ series:
   - bionic
   - cosmic
   - disco
-#provides:
-#  provides-relation:
-#    interface: interface-name
-#requires:
-#  requires-relation:
-#    interface: interface-name
+provides:
+  website:
+    interface: http
+requires:
+  db:
+    interface: pgsql
 #peers:
 #  peer-relation:
 #    interface: interface-name

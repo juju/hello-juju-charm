@@ -1,0 +1,31 @@
+#!/bin/bash
+
+set -e
+set -x
+
+HOST=$(relation-get host)
+PORT=$(relation-get port)
+DATABASE=$(relation-get database)
+USER=$(relation-get user)
+PASSWORD=$(relation-get password)
+
+if [[ -z $HOST ]]\
+|| [[ -z $PORT ]]\
+|| [[ -z $DATABASE ]]\
+|| [[ -z $USER ]]\
+|| [[ -z $PASSWORD ]];
+then
+  exit 0
+fi
+
+cat <<DOTENV > /srv/http/hello-juju/.env
+HOST=$HOST
+PORT=$PORT
+DATABASE=$DATABASE
+USER=$USER
+PASSWORD=$PASSWORD
+DOTENV
+
+status-set maintenance "Restarting"
+exec oldhooks/stop
+exec oldhooks/start

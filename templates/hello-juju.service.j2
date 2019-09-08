@@ -1,0 +1,23 @@
+[Unit]
+Description=Hello Juju web application
+After=network.target
+
+[Service]
+WorkingDirectory = {{ project_root }}
+User = {{ user }}
+Group = {{ group }}
+Restart = always
+RestartSec = 5
+ExecStart=/srv/hello-juju/venv/bin/gunicorn \
+            --access-logfile {{ project_root }}/access.log \
+            --error-logfile {{ project_root }}/error.log \
+            --bind 0.0.0.0:{{ port }} \
+            hello_juju:app
+ExecReload = /bin/kill -s HUP $MAINPID
+ExecStop = /bin/kill -s TERM $MAINPID
+ExecStartPre = /bin/mkdir {{ project_root }}/run
+PIDFile = {{ project_root }}/run/hello-juju.pid
+ExecStopPost = /bin/rm -rf {{ project_root }}/run
+
+[Install]
+WantedBy = multi-user.target

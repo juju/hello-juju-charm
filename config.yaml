@@ -1,0 +1,8 @@
+options:
+  commit-or-branch:
+    type: string
+    default: master
+
+  repo:
+    type: string
+    default: https://github.com/timClicks/hello-juju

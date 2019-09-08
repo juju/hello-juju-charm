@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -e
+set -x
+
+PROJECT_ROOT=/srv/http
+PROJECT_NAME=hello-juju
+PROJECT_PATH=$PROJECT_ROOT/$PROJECT_NAME
+PROJECT_ENV=$PROJECT_PATH/venv
+PYTHON=/usr/bin/python3
+
+status-set maintenance "Installing charm dependencies"
+apt-get update -yy && apt-get upgrade -yy
+apt-get install -yy python3 python3-pip python3-virtualenv git wget
+
+mkdir -p $PROJECT_ROOT
+cd $PROJECT_ROOT
+
+if [ -d $PROJECT_PATH ]
+then
+    status-set maintenance "Updating hello-juju source code"
+    cd $PROJECT_NAME
+    git pull
+else
+    status-set maintenance "Downloading hello-juju source code"
+    git clone https://github.com/timClicks/hello-juju
+    cd $PROJECT_NAME
+fi
+
+status-set maintenance "Creating virtual environment"
+$PYTHON -m virtualenv -p $PYTHON $PROJECT_ENV
+
+status-set maintenance "Installing hello-juju dependencies"
+$PROJECT_ENV/bin/pip install gunicorn
+$PROJECT_ENV/bin/pip install -r $PROJECT_PATH/requirements.txt
+$PROJECT_ENV/bin/python $PROJECT_PATH/init.py
+
+status-set waiting "waiting for start hook"
