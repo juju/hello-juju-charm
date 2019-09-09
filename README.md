@@ -45,9 +45,6 @@ The charm also installs `curl` on `hello-juju/0`, so you could try that too.
 
 ## Relating to other charms
 
-Applications can negotiate their own configuration via Juju relations.
-A relation is 
-
 ### Changing databases via `pgsql`
 
 By default, `hello-juju` uses a SQLite database.
@@ -60,11 +57,6 @@ When related to a charm that provides the `pgsql` relation, `hello-juju` will st
 ## Scaling out
 
 This charm is not able to be used with multiple units.
-
-
-## Configuration
-
-`hello-juju` does not support custom configuration.
 
 
 # Project Information

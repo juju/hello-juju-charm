@@ -2,8 +2,8 @@ name: hello-juju
 summary: An introductory charm
 maintainer: Tim McNamara <tsm@canonical.com>
 description: |
-  An introductory charm for app authors to learn how to
-  write charms for projects that they want to deploy.
+  An introductory charm for developers to learn how to
+  write charms to make them easy to deploy.
 tags:
   - misc
 subordinate: false
@@ -11,9 +11,9 @@ series:
   - bionic
   - cosmic
   - disco
-provides:
-  website:
-    interface: http
+#provides:
+#  website:
+#    interface: http
 requires:
   db:
     interface: pgsql
