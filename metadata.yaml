@@ -5,6 +5,8 @@ description: |
   An introductory charm for developers to learn how to
   write charms to make them easy to deploy.
 tags:
+  - web-application
+  - flask
   - misc
 subordinate: false
 series:
