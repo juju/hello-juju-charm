@@ -5,18 +5,13 @@ description: |
   An introductory charm for developers to learn how to
   write charms to make them easy to deploy.
 tags:
-  - misc
+  - flask
+  - web-application
 subordinate: false
 series:
   - bionic
   - cosmic
   - disco
-#provides:
-#  website:
-#    interface: http
 requires:
   db:
     interface: pgsql
-#peers:
-#  peer-relation:
-#    interface: interface-name
