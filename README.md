@@ -6,7 +6,7 @@ This charm is intended to be used with Juju's [Getting Started][] documentation.
 
 Deploying `hello-juju`:
 
-    juju deploy cs:~juju/hello-juju
+    juju deploy hello-juju
     juju expose hello-juju
 
 You can now access the application by connecting to the unit's public address field from the `juju status` output:
