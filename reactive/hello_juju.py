@@ -12,10 +12,8 @@ from charms.reactive.flags import register_trigger
 def dbname():
     return f'hello-juju_{application_name()}'
 
-
 def port():
     return int(config('port'))
-
 
 @when('codebase.available')
 @when_not('hello_juju.installed')
@@ -108,9 +106,3 @@ def create_and_configure_database():
 def port_updated():
     configure_gunicorn()
     restart()
-
-# @when('website.available')
-# @when('hello_juju.gunicorn_configured')
-# def configure_website(website):
-#     website.configure(port=PORT)
-#     status_set('active', "Serving HTTP via upstream server")
