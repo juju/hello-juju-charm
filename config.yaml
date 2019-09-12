@@ -28,4 +28,10 @@ options:
       Works in conjunction with the commit-or-branch, deploy-key,
       and key-required parameters.
     type: string
-    default: https://github.com/timClicks/hello-juju
+    default: https://github.com/juju/hello-juju
+
+  port:
+    description: |
+      The port to listen on.
+    type: int
+    default: 80

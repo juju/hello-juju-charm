@@ -3,7 +3,7 @@ from subprocess import check_call
 
 from charmhelpers.core.templating import render
 from charmhelpers.core.host import service, service_running, service_available
-from charmhelpers.core.hookenv import open_port, log
+from charmhelpers.core.hookenv import open_port, log, config
 from charmhelpers.core.hookenv import status_set
 from charmhelpers.core.hookenv import application_name
 from charms.reactive import when, when_not, set_flag, set_state, endpoint_from_flag, when_file_changed
@@ -14,6 +14,8 @@ PORT=8000
 def dbname():
     return f'hello-juju_{application_name()}'
 
+def port():
+    return int(config('port'))
 
 @when('codebase.available')
 @when_not('hello_juju.installed')
@@ -75,7 +77,7 @@ def request_db(pgsql):
 
 @when_file_changed('/srv/hello-juju/current/settings.py', '/etc/systemd/system/hello-juju.service')
 def restart():
-    open_port(PORT)
+    open_port(port())
     if service_running('hello-juju'):
         service('restart', 'hello-juju')
     else:
@@ -92,11 +94,6 @@ def pending():
 def create_and_configure_database():
     pgsql = endpoint_from_flag('db.master.available')
 
-    # log(repr(pgsql))
-    # log(str(dir(pgsql)))
-    # log(repr(pgsql.master))
-    # log(str(dir(pgsql.master)))
-
     render(
         'settings.py.j2',
         '/srv/hello-juju/current/settings.py',
@@ -106,10 +103,3 @@ def create_and_configure_database():
     )
     create_database_tables()
     set_state('hello_juju.database_configured')
-
-
-@when('website.available')
-@when('hello_juju.gunicorn_configured')
-def configure_website(website):
-    website.configure(port=PORT)
-    status_set('active', "Serving HTTP via upstream server")
