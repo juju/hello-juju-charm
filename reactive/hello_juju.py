@@ -85,7 +85,7 @@ def restart():
 @when_not('db.master.available')
 @when('hello_juju.database_requested')
 def pending():
-    status_set('pending', 'Awaiting database creation')
+    status_set('waiting', 'Awaiting database creation')
 
 @when('db.master.available', 'codebase.available')
 @when_not('hello_juju.database_configured')
@@ -101,6 +101,7 @@ def create_and_configure_database():
     )
     create_database_tables()
     set_state('hello_juju.database_configured')
+    status_set('active', '')
 
 @when('config.changed.port')
 def port_updated():
