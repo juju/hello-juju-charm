@@ -1,0 +1,17 @@
+tests:
+# - bionic_model:
+#   - zaza.charm_tests.noop.tests.NoopTestBionic
+# - xenial_model:
+#   - zaza.charm_tests.noop.tests.NoopTestXenial
+ - zaza.charm_tests.noop.tests.NoopTest
+configure:
+# - bionic_model:
+#   - zaza.charm_tests.noop.setup.basic_setup_bionic
+# - xenial_model:
+#   - zaza.charm_tests.noop.setup.basic_setup_xenial
+ - zaza.charm_tests.noop.setup.basic_setup
+gate_bundles:
+    - xenial
+    - bionic
+smoke_bundles:
+    - focal

@@ -1,0 +1,25 @@
+name: charm-hello-juju-k8s
+summary: A demonstration charm for working with a HTTP-based applications
+maintainers:
+    - Tim McNamara <tsm@canonical.com>
+description: |
+    This charm demonstrates how to get started with Juju on Kubernetes.
+
+    It is currently under development.
+tags:
+    - misc
+series:
+    - kubernetes
+resources:
+    webapp:
+        type: oci-image
+        description: |
+         The charm-hello-stateless web app. See 
+         https://github.com/timClicks/charm-hello-stateless. 
+# -- example relations, delete if unneeded
+#requires:
+#    db:
+#        interface: mysql
+#provides:
+#    website:
+#        interface: http
