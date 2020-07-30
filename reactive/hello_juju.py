@@ -67,8 +67,9 @@ def create_database_tables():
 
 
 @when('db.connected')
+@when_not('hello_juju.database_requested')
 def request_db(pgsql):
-    status_set('maintenance', 'Ensuring database is available')
+    status_set('waiting', 'Requesting database creation')
     pgsql.set_database(dbname())
     set_state('hello_juju.database_requested')
 
