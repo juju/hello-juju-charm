@@ -1,0 +1,16 @@
+# Copyright 2021 Canonical
+# See LICENSE file for licensing details.
+name: hello-juju
+description: |
+  An introductory charm using the Charmed Operator Framework. Deploys a simply
+  Python Flask application and implements a relation to PostgreSQL.
+summary: |
+  An introductory charm using the Charmed Operator Framework.
+tags:
+  - flask
+  - web-application
+  - example
+  - operator-framework
+requires:
+  db:
+    interface: pgsql

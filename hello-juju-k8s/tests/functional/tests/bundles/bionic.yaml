@@ -1,6 +1,0 @@
-series: bionic
-
-applications:
-    charm-hello-juju-k8s:
-        charm: ../../../../
-        num_units: 1

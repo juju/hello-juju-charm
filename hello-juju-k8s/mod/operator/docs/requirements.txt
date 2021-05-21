@@ -1,5 +1,0 @@
--r ../requirements.txt
-
-sphinx==3.*
-sphinx_rtd_theme
-
