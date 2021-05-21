@@ -4,37 +4,6 @@
 # Learn more about config at: https://juju.is/docs/sdk/config
 
 options:
-  commit-or-branch:
-    type: string
-    default: master
-    description: |
-      The commit hash or branch name used with the repo parameter.
-
-  deploy-key:
-    type: string
-    default: ""
-    description: |
-      SSH key to provide to the Git server to grant access to the
-      repository. Only used when the key-required parameter is set
-      to true.
-
-  key-required:
-    type: boolean
-    default: false
-    description: |
-      Whether the deploy-key should be used to access the repository
-      indicated by the repo parameter.
-
-  repo:
-    description: |
-      Where to deploy the underlying Flask application to deploy from.
-      Must be a git repository.
-
-      Works in conjunction with the commit-or-branch, deploy-key,
-      and key-required parameters.
-    type: string
-    default: https://github.com/juju/hello-juju
-
   port:
     description: |
       The port to listen on.

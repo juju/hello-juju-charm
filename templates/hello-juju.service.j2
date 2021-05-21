@@ -6,7 +6,7 @@ After=network.target
 WorkingDirectory = {{ project_root }}
 Restart = always
 RestartSec = 5
-ExecStart=/srv/hello-juju/venv/bin/gunicorn \
+ExecStart={{ project_root }}/venv/bin/gunicorn \
             -u {{ user }} \
             -g {{ group }} \
             --access-logfile {{ project_root }}/access.log \
