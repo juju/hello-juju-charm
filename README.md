@@ -1,7 +1,5 @@
 # Hello, Juju! Charm
 
-## Overview
-
 This [charm](https://charmhub.io/hello-juju) is a demonstration machine charm
 written with the [Charmed Operator Framework](https://github.com/canonical/operator).
 
