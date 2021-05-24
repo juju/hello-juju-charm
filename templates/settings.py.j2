@@ -6,5 +6,5 @@
 #     any updates may be overwritten          #
 ###############################################
 
-DATABASE_URI = "postgresql+pg8000://{{ db.user }}:{{ db.password }}@{{ db.host }}:{{ db.port }}/{{ db.dbname }}"
+DATABASE_URI = "{{ conn_str }}"
 TRACK_MODIFICATIONS = False

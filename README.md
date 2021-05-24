@@ -1,25 +1,162 @@
-# hello-juju-charm
+# Hello, Juju! Charm
 
-## Description
+<h2>Contents</h2>
 
-TODO: Describe your charm in a few paragraphs of Markdown
+<p>
+  <a href="#overview">Overview</a><br/>
+  <a href="#quickstart">Quickstart</a><br/>
+  <a href="#using-postgresql">Using PostgreSQL</a><br/>
+  <a href="#development-setup">Development Setup</a><br/>
+  <a href="#build">Build and Deploy Locally</a><br/>
+  <a href="#testing">Testing</a><br/>
+  <a href="#help">Get Help & Community</a><br/>
+  <a href="#more">More Information/Related</a><br/>
+</p>
 
-## Usage
+<h2 id="overview">Overview</h2>
 
-TODO: Provide high-level usage, such as required config or relations
+This [charm](https://charmhub.io/hello-juju) is a demonstration machine charm
+written with the [Charmed Operator Framework](https://github.com/canonical/operator).
 
+It deploys a simple Python [Flask](https://flask.palletsprojects.com/en/2.0.x/)
+[web application](https://github.com/juju/hello-juju). The application itself is
+simple, and counts the number of times the root URL has been requested and stores the
+count in a database. With no database relation defined, this information is stored in
+a sqlite database.
 
-## Developing
+This charm also supports a [relation](https://juju.is/docs/sdk/relations) to the
+[PostgreSQL charm](https://charmhub.io/postgresql). When this relation is established
+the Flask application is automatically configured to use the PostgreSQL database
+to store its count.
 
-Create and activate a virtualenv with the development requirements:
+<h2 id="quickstart">Quickstart</h2>
 
-    virtualenv -p python3 venv
-    source venv/bin/activate
-    pip install -r requirements-dev.txt
+Assuming you already have Juju installed and bootstrapped on a cloud, such as LXD:
 
-## Testing
+```bash
+# Create a model
+$ juju add-model dev
+# Deploy the charm
+$ juju deploy hello-juju
+# Wait for the deployment to complete
+$ juju status
+Model  Controller  Cloud/Region         Version  SLA          Timestamp
+dev    lxd         localhost/localhost  2.9.1    unsupported  14:46:51+01:00
 
-The Python operator framework includes a very nice harness for testing
-operator behaviour without full deployment. Just `run_tests`:
+App         Version  Status  Scale  Charm       Store  Channel  Rev  OS      Message
+hello-juju           active      1  hello-juju  local             0  ubuntu
 
-    ./run_tests
+Unit           Workload  Agent  Machine  Public address  Ports   Message
+hello-juju/0*  active    idle   0        10.14.25.117    80/tcp
+
+Machine  State    DNS           Inst id        Series  AZ  Message
+0        started  10.14.25.117  juju-9f46aa-0  focal       Running
+```
+
+You should be able to visit [http://10.14.25.117](http://10.14.25.117)
+in your browser.
+
+<h2 id="using-postgresql">Using PostgreSQL</h2>
+
+To use PostgreSQL as the backing database, deploy the charm, then deploy PostgreSQL
+and relate the two applications, specifying the `db` interface.
+
+Assuming you already have the `hello-juju` charm deployed, you can start using
+PostgreSQL like so:
+
+```bash
+# Deploy PostgreSQL
+$ juju deploy postgresql
+# Relate the two applications
+$ juju relate hello-juju postgresql:db
+# Check the status:
+$ juju status --relations
+Model  Controller  Cloud/Region         Version  SLA          Timestamp
+dev    lxd         localhost/localhost  2.9.1    unsupported  14:55:47+01:00
+
+App         Version  Status  Scale  Charm       Store     Channel  Rev  OS      Message
+hello-juju           active      1  hello-juju  local                1  ubuntu
+postgresql  12.6     active      1  postgresql  charmhub  stable   233  ubuntu  Live master (12.6)
+
+Unit           Workload  Agent  Machine  Public address  Ports     Message
+hello-juju/0*  active    idle   2        10.14.25.117    80/tcp
+postgresql/0*  active    idle   1        10.14.25.157    5432/tcp  Live master (12.6)
+
+Machine  State    DNS           Inst id        Series  AZ  Message
+1        started  10.14.25.157  juju-9f46aa-1  focal       Running
+2        started  10.14.25.117  juju-9f46aa-2  focal       Running
+
+Relation provider       Requirer                Interface    Type     Message
+postgresql:coordinator  postgresql:coordinator  coordinator  peer
+postgresql:db           hello-juju:db           pgsql        regular
+postgresql:replication  postgresql:replication  pgpeer       peer
+```
+
+<h2 id="development-setup">Development Setup</h2>
+
+To set up a local test environment with [LXD](https://linuxcontainers.org/lxd/introduction/):
+
+```bash
+# Install LXD
+$ sudo snap install --classic lxd
+# Configure LXD with defaults
+$ sudo lxd init --auto
+# (Optional) Add your user to the LXD group
+$ newgrp lxd
+$ sudo adduser $(whoami) lxd
+# Install Charmcraft
+$ sudo snap install charmcraft
+# Install juju
+$ sudo snap install --classic juju
+# Bootstrap the Juju controller on lxd
+$ juju bootstrap localhost lxd
+# Add a new model to Juju
+$ juju add-model dev
+```
+
+<h2 id="build">Build and Deploy Locally</h2>
+
+```bash
+# Clone the charm code
+$ git clone https://github.com/juju/hello-juju && cd hello-juju
+# Build the charm package
+$ charmcraft pack
+# Deploy!
+$ juju deploy ./hello-juju.charm
+# Wait for the deployment to complete
+$ watch -n1 --color juju status --color
+```
+
+<h2 id="testing">Testing</h2>
+
+```bash
+# Clone the charm code
+$ git clone https://github.com/juju/hello-juju && cd hello-juju
+# Install python3-virtualenv
+$ sudo apt update && sudo apt install -y python3-virtualenv
+# Create a virtualenv for the charm code
+$ virtualenv venv
+# Activate the venv
+$ source ./venv/bin/activate
+# Install dependencies
+$ pip install -r requirements-dev.txt
+# Run the tests
+$ ./run_tests
+```
+
+<h2 id="help">Get Help & Community</h2>
+
+If you get stuck deploying this charm, or would like help with charming
+generally, come and join the charming community!
+
+- [Community Discourse](https://discourse.charmhub.io)
+- [Community Chat](https://chat.charmhub.io/charmhub/channels/creating-charmed-operators)
+
+<h2 id="more">More Information/Related</h2>
+
+Below are some links related to this demo charm:
+
+- [Charmed Operator Framework Documentation](https://juju.is/docs/sdk)
+- [Charmed Operator Framework Source](https://github.com/canonical/operator)
+- [Juju Documentation](https://juju.is/docs/olm)
+- [Charmhub](https://charmhub.io)
