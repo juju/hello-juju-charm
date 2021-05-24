@@ -32,7 +32,7 @@ pgsql = ops.lib.use("pgsql", 1, "postgresql-charmers@lists.launchpad.net")
 logger = logging.getLogger(__name__)
 
 APP_PATH = Path("/srv/app")
-VENV_ROOT = Path("/srv/app/venv")
+VENV_ROOT = Path(f"{APP_PATH}/venv")
 
 
 class HelloJujuCharm(CharmBase):
