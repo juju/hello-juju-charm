@@ -1,19 +1,6 @@
 # Hello, Juju! Charm
 
-<h2>Contents</h2>
-
-<p>
-  <a href="#overview">Overview</a><br/>
-  <a href="#quickstart">Quickstart</a><br/>
-  <a href="#using-postgresql">Using PostgreSQL</a><br/>
-  <a href="#development-setup">Development Setup</a><br/>
-  <a href="#build">Build and Deploy Locally</a><br/>
-  <a href="#testing">Testing</a><br/>
-  <a href="#help">Get Help & Community</a><br/>
-  <a href="#more">More Information/Related</a><br/>
-</p>
-
-<h2 id="overview">Overview</h2>
+## Overview
 
 This [charm](https://charmhub.io/hello-juju) is a demonstration machine charm
 written with the [Charmed Operator Framework](https://github.com/canonical/operator).
@@ -29,7 +16,7 @@ This charm also supports a [relation](https://juju.is/docs/sdk/relations) to the
 the Flask application is automatically configured to use the PostgreSQL database
 to store its count.
 
-<h2 id="quickstart">Quickstart</h2>
+## Quickstart
 
 Assuming you already have Juju installed and bootstrapped on a cloud, such as LXD:
 
@@ -56,7 +43,7 @@ Machine  State    DNS           Inst id        Series  AZ  Message
 You should be able to visit [http://10.14.25.117](http://10.14.25.117)
 in your browser.
 
-<h2 id="using-postgresql">Using PostgreSQL</h2>
+## Using PostgreSQL
 
 To use PostgreSQL as the backing database, deploy the charm, then deploy PostgreSQL
 and relate the two applications, specifying the `db` interface.
@@ -92,7 +79,7 @@ postgresql:db           hello-juju:db           pgsql        regular
 postgresql:replication  postgresql:replication  pgpeer       peer
 ```
 
-<h2 id="development-setup">Development Setup</h2>
+## Development Setup
 
 To set up a local test environment with [LXD](https://linuxcontainers.org/lxd/introduction/):
 
@@ -114,7 +101,7 @@ $ juju bootstrap localhost lxd
 $ juju add-model dev
 ```
 
-<h2 id="build">Build and Deploy Locally</h2>
+## Build and Deploy Locally
 
 ```bash
 # Clone the charm code
@@ -127,7 +114,7 @@ $ juju deploy ./hello-juju.charm
 $ watch -n1 --color juju status --color
 ```
 
-<h2 id="testing">Testing</h2>
+## Testing
 
 ```bash
 # Clone the charm code
@@ -144,7 +131,7 @@ $ pip install -r requirements-dev.txt
 $ ./run_tests
 ```
 
-<h2 id="help">Get Help & Community</h2>
+## Get Help & Community
 
 If you get stuck deploying this charm, or would like help with charming
 generally, come and join the charming community!
@@ -152,7 +139,7 @@ generally, come and join the charming community!
 - [Community Discourse](https://discourse.charmhub.io)
 - [Community Chat](https://chat.charmhub.io/charmhub/channels/creating-charmed-operators)
 
-<h2 id="more">More Information/Related</h2>
+## More Information/Related
 
 Below are some links related to this demo charm:
 
