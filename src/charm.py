@@ -150,7 +150,6 @@ class HelloJujuCharm(CharmBase):
 
         # Fetch the code using git
         Repo.clone_from(self._stored.repo, APP_PATH)
-
         # Install application dependencies
         check_output(["python3", "-m", "virtualenv", VENV_ROOT])
         check_output([f"{VENV_ROOT}/bin/pip3", "install", "gunicorn"])
@@ -225,5 +224,5 @@ class HelloJujuCharm(CharmBase):
         check_call(["sudo", "-u", "www-data", f"{VENV_ROOT}/bin/python3", f"{APP_PATH}/init.py"])
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main(HelloJujuCharm)

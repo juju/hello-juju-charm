@@ -167,3 +167,55 @@ class TestCharm(unittest.TestCase):
         self.assertEqual(
             self.harness.charm.unit.status, BlockedStatus("Failed to install packages")
         )
+
+    @mock.patch("charm.HelloJujuCharm._create_database_tables")
+    @mock.patch("charm.HelloJujuCharm._render_settings_file")
+    @mock.patch("charm.check_output")
+    @mock.patch("charm.Repo.clone_from")
+    @mock.patch("charm.Path")
+    @mock.patch("shutil.rmtree")
+    def test_setup_application(self, _rmtree, _path, _clone, _check_output, _render, _createdb):
+        # Setup to dive into all the if branches on the first run
+        # Make sure we try to remove the directory that "exists"
+        _path.return_value.is_dir.return_value = True
+        # Set a connection string so that we render the settings file
+        self.harness.charm._stored.conn_str = "my_connection_string"
+        # Call the method
+        self.harness.charm._setup_application()
+        # Ensure we set the charm status correctly
+        self.assertEqual(
+            self.harness.charm.unit.status, MaintenanceStatus("fetching application code")
+        )
+        # Check we try to remove the directory
+        _rmtree.assert_called_with("/srv/app")
+        # Check we set the stored repository where none exists
+        self.assertEqual(self.harness.charm._stored.repo, "https://github.com/juju/hello-juju")
+        # Ensure we clone the repo
+        _clone.assert_called_with("https://github.com/juju/hello-juju", APP_PATH)
+        # Ensure we initialise the Python deps correctly
+        self.assertEqual(
+            _check_output.call_args_list,
+            [
+                call(["python3", "-m", "virtualenv", VENV_ROOT]),
+                call([f"{VENV_ROOT}/bin/pip3", "install", "gunicorn"]),
+                call([f"{VENV_ROOT}/bin/pip3", "install", "-r", f"{APP_PATH}/requirements.txt"]),
+            ],
+        )
+        # Check we render the settings file with the stored connection string
+        _render.assert_called_once()
+        # Check that the database table method is called
+        _createdb.assert_called_once()
+        #
+        # Run again covering different branches
+        #
+        # Make sure we don't try to remove the directory
+        _path.return_value.is_dir.return_value = False
+        self.harness.charm._stored.repo = "https://myrepo"
+        self.harness.charm._stored.conn_str = ""
+        _rmtree.reset_mock()
+        _render.reset_mock()
+        # Call the method
+        self.harness.charm._setup_application()
+        _render.assert_not_called()
+        _rmtree.assert_not_called()
+        self.assertEqual(self.harness.charm._stored.repo, "https://myrepo")
