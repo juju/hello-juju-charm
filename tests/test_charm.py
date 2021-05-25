@@ -9,7 +9,7 @@ from unittest import mock
 from unittest.mock import Mock, call, mock_open, patch
 
 from charm import APP_PATH, VENV_ROOT, HelloJujuCharm
-from ops.model import BlockedStatus, MaintenanceStatus
+from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
 from ops.testing import Harness
 
 RENDERED_SETTINGS = """
@@ -53,6 +53,34 @@ class TestCharm(unittest.TestCase):
         self.harness = Harness(HelloJujuCharm)
         self.addCleanup(self.harness.cleanup)
         self.harness.begin()
+
+    @mock.patch("charm.HelloJujuCharm._install_apt_packages")
+    @mock.patch("charm.HelloJujuCharm._setup_application")
+    @mock.patch("charm.HelloJujuCharm._render_systemd_unit")
+    @mock.patch("charm.check_call")
+    def test_on_install(self, _call, _render, _setup, _install):
+        self.harness.charm.on.install.emit()
+        self.assertEqual(
+            self.harness.charm.unit.status, MaintenanceStatus("installing pip and virtualenv")
+        )
+        _install.assert_called_with(["python3-pip", "python3-virtualenv"])
+        _setup.assert_called_once()
+        _render.assert_called_once()
+        _call.assert_called_with(["systemctl", "enable", "hello-juju"])
+
+    @mock.patch("charm.check_call")
+    def test_on_start(self, _call):
+        # This would normally have happened during the install event
+        self.harness.charm._stored.port = 80
+        # Run the handler
+        self.harness.charm.on.start.emit()
+        # Ensure we set an ActiveStatus for the charm
+        self.assertEqual(self.harness.charm.unit.status, ActiveStatus())
+        # Make sure the port is opened and the service is started
+        self.assertEqual(
+            _call.call_args_list,
+            [call(["open-port", "80/TCP"]), call(["systemctl", "start", "hello-juju"])],
+        )
 
     @mock.patch("subprocess.call")
     def test_create_database_tables(self, _mock):
