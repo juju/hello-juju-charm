@@ -5,10 +5,11 @@
 
 import subprocess
 import unittest
+from pathlib import Path
 from unittest import mock
 from unittest.mock import Mock, call, mock_open, patch
 
-from charm import APP_PATH, VENV_ROOT, HelloJujuCharm
+from charm import APP_PATH, UNIT_PATH, VENV_ROOT, HelloJujuCharm
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
 from ops.testing import Harness
 
@@ -82,6 +83,49 @@ class TestCharm(unittest.TestCase):
             [call(["open-port", "80/TCP"]), call(["systemctl", "start", "hello-juju"])],
         )
 
+    @mock.patch("charm.check_call")
+    @mock.patch("charm.HelloJujuCharm._setup_application")
+    @mock.patch("charm.HelloJujuCharm._render_systemd_unit")
+    def test_on_config_changed(self, _render, _setup, _call):
+        # Check first run, no change to values set by install/start
+        self.harness.charm._stored.repo = "https://github.com/juju/hello-juju"
+        self.harness.charm._stored.port = 80
+        # Run the handler
+        self.harness.charm.on.config_changed.emit()
+        _setup.assert_not_called()
+        _call.assert_not_called()
+        self.assertEqual(self.harness.charm.unit.status, ActiveStatus())
+
+        # Change the application repo, should prompt a restart
+        _setup.reset_mock()
+        _call.reset_mock()
+        self.harness.update_config({"application-repo": "DIFFERENT"})
+        self.assertEqual(self.harness.charm._stored.repo, "DIFFERENT")
+        _setup.assert_called_once()
+        # This also ensures that the port change code wasn't run
+        _call.assert_called_once()
+        _render.assert_not_called()
+        _call.assert_called_with(["systemctl", "restart", "hello-juju"])
+        self.assertEqual(self.harness.charm.unit.status, ActiveStatus())
+
+        # Change the port, should prompt a restart
+        _setup.reset_mock()
+        _call.reset_mock()
+        self.harness.update_config({"port": 8080})
+        self.assertEqual(self.harness.charm._stored.port, 8080)
+        _render.assert_called_once()
+        _setup.assert_not_called()
+        # Check the old port is closed, the new is opened and the service restarts
+        self.assertEqual(
+            _call.call_args_list,
+            [
+                call(["close-port", "80/TCP"]),
+                call(["open-port", "8080/TCP"]),
+                call(["systemctl", "restart", "hello-juju"]),
+            ],
+        )
+        self.assertEqual(self.harness.charm.unit.status, ActiveStatus())
+
     @mock.patch("subprocess.call")
     def test_create_database_tables(self, _mock):
         # Define the args that 'check_call' should be called with
@@ -146,16 +190,18 @@ class TestCharm(unittest.TestCase):
             # Call the method
             self.harness.charm._render_systemd_unit()
 
+        # Check the unit path is correct
+        self.assertEqual(UNIT_PATH, Path("/etc/systemd/system/hello-juju.service"))
         # Check the state was updated with the port from the config
         self.assertEqual(self.harness.charm._stored.port, self.harness.charm.config["port"])
         # Check the template is opened read-only in the first call to open
         self.assertEqual(m.call_args_list[0][0], ("templates/hello-juju.service.j2", "r"))
         # Check the systemd unit file is opened with "w+" mode in the second call to open
-        self.assertEqual(m.call_args_list[1][0], ("/etc/systemd/system/hello-juju.service", "w+"))
+        self.assertEqual(m.call_args_list[1][0], (UNIT_PATH, "w+"))
         # Ensure the correct rendered template is written to file
         m.return_value.write.assert_called_with(RENDERED_SYSTEMD_UNIT)
         # Check the file permissions are set correctly
-        _chmod.assert_called_with("/etc/systemd/system/hello-juju.service", 0o755)
+        _chmod.assert_called_with(UNIT_PATH, 0o755)
         # Check that systemd is reloaded to register the changes to the unit
         _call.assert_called_with(["systemctl", "daemon-reload"])
 
@@ -210,6 +256,9 @@ class TestCharm(unittest.TestCase):
         self.harness.charm._stored.conn_str = "my_connection_string"
         # Call the method
         self.harness.charm._setup_application()
+        # Check the default paths
+        self.assertEqual(APP_PATH, Path("/srv/app"))
+        self.assertEqual(VENV_ROOT, Path(f"{APP_PATH}/venv"))
         # Ensure we set the charm status correctly
         self.assertEqual(
             self.harness.charm.unit.status, MaintenanceStatus("fetching application code")

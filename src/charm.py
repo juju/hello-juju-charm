@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 APP_PATH = Path("/srv/app")
 VENV_ROOT = Path(f"{APP_PATH}/venv")
+UNIT_PATH = Path("/etc/systemd/system/hello-juju.service")
 
 
 class HelloJujuCharm(CharmBase):
@@ -190,11 +191,11 @@ class HelloJujuCharm(CharmBase):
             port=self._stored.port, project_root=APP_PATH, user="www-data", group="www-data"
         )
         # Write the rendered file out to disk
-        with open("/etc/systemd/system/hello-juju.service", "w+") as t:
+        with open(UNIT_PATH, "w+") as t:
             t.write(rendered)
 
         # Ensure correct permissions are set on the service
-        os.chmod("/etc/systemd/system/hello-juju.service", 0o755)
+        os.chmod(UNIT_PATH, 0o755)
         # Reload systemd units
         check_call(["systemctl", "daemon-reload"])
 
