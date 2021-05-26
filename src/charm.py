@@ -106,11 +106,6 @@ class HelloJujuCharm(CharmBase):
         if self.unit.is_leader():
             # Ask the database to create a database with this app's name
             event.database = self.app.name
-        elif event.database != self.app.name:
-            # Application leader has not yet set requirements, defer this event
-            # in case this unit becomes leader and needs to perform this op
-            event.defer()
-            return
 
     def _on_database_master_changed(self, event):
         """Handler the case where a new PostgreSQL DB master is available"""

@@ -126,13 +126,87 @@ class TestCharm(unittest.TestCase):
         )
         self.assertEqual(self.harness.charm.unit.status, ActiveStatus())
 
-    def test_on_database_relation_joined(self):
+    @mock.patch("pgsql.opslib.pgsql.client._leader_get")
+    @mock.patch("pgsql.opslib.pgsql.client._leader_set")
+    def test_on_database_relation_joined_leader(self, _leader_set, _leader_get):
+        # Setup the mocks for leader-get and leader-set in the pgsql library
+        _leader_get.return_value = {}
+        _leader_set.return_value = None
         # Test first as leader
         self.harness.set_leader(True)
-        relation = self.harness.add_relation("database")
+        # Define the relation
+        relation = self.harness.add_relation("db", "postgresql")
+        # Add a unit to the relation
+        self.harness.add_relation_unit(relation, "postgresql/0")
+        # Ensure that this charm sets it's relation data correctly
         self.assertEqual(
-            self.harness.get_relation_data(relation, self.app.name), {"database", self.app.name}
+            self.harness.get_relation_data(relation, self.harness.charm.app.name),
+            {"database": self.harness.charm.app.name},
         )
+
+    @mock.patch("pgsql.opslib.pgsql.client._leader_get")
+    @mock.patch("pgsql.opslib.pgsql.client._leader_set")
+    def test_on_database_relation_joined_non_leader(self, _leader_set, _leader_get):
+        # Setup the mocks for leader-get and leader-set in the pgsql library
+        _leader_get.return_value = {}
+        _leader_set.return_value = None
+        # Test first as leader
+        self.harness.set_leader(False)
+        # Define the relation
+        relation = self.harness.add_relation("db", "postgresql")
+        # Add a unit to the relation
+        self.harness.add_relation_unit(relation, "postgresql/0")
+        # Ensure that this charm sets it's relation data correctly
+        self.assertEqual(
+            self.harness.get_relation_data(relation, self.harness.charm.app.name),
+            {},
+        )
+
+    @mock.patch("charm.HelloJujuCharm._render_settings_file")
+    @mock.patch("charm.HelloJujuCharm._create_database_tables")
+    @mock.patch("charm.check_call")
+    @mock.patch("pgsql.opslib.pgsql.client._leader_get")
+    @mock.patch("pgsql.opslib.pgsql.client._leader_set")
+    def test_on_database_master_changed(self, _leader_set, _leader_get, _call, _createdb, _render):
+        # Setup the mocks for leader-get and leader-set in the pgsql library
+        _leader_get.return_value = {}
+        _leader_set.return_value = None
+        # Test as a leader first
+        self.harness.set_leader(True)
+        # Setup the relation
+        relation = self.harness.add_relation("db", "postgresql")
+        self.harness.add_relation_unit(relation, "postgresql/0")
+
+        # Trigger the on_database_master_changed event with some data
+        test_event = Mock()
+        test_event.database = "hello-juju"
+        test_event.master.uri = "TEST"
+
+        # Run the handler
+        self.harness.charm._on_database_master_changed(test_event)
+        self.assertEqual(self.harness.charm._stored.conn_str, "TEST")
+        _render.assert_called_once()
+        _createdb.assert_called_once()
+        _call.assert_called_with(["systemctl", "restart", "hello-juju"])
+        self.assertEqual(self.harness.charm.unit.status, ActiveStatus())
+
+        # Check where the database hasn't yet been set
+        # Reset some stuff
+        _render.reset_mock()
+        test_event = Mock()
+        # Run the handler
+        self.harness.charm._on_database_master_changed(test_event)
+        _render.assert_not_called()
+
+        # Check where the database hasn't yet been set
+        # Reset some stuff
+        _call.reset_mock()
+        test_event = Mock()
+        test_event.database = "hello-juju"
+        test_event.master = None
+        # Run the handler
+        self.harness.charm._on_database_master_changed(test_event)
+        _call.assert_not_called()
 
     @mock.patch("subprocess.call")
     def test_create_database_tables(self, _mock):
@@ -232,9 +306,6 @@ class TestCharm(unittest.TestCase):
         _call.return_code = 0
         # Call the method with some packages to install
         self.harness.charm._install_apt_packages(["curl", "vim"])
-        # Ensure the log output is correct
-        self.assertLogs("updating apt cache", level="DEBUG")
-        self.assertLogs("installing apt packages: curl, vim", level="DEBUG")
         # Check that apt is called with the correct arguments
         self.assertEqual(
             _call.call_args_list,
@@ -245,7 +316,6 @@ class TestCharm(unittest.TestCase):
         _call.return_value = 1
         _call.side_effect = subprocess.CalledProcessError(1, "apt")
         self.harness.charm._install_apt_packages(["curl", "vim"])
-        self.assertLogs("failed to install packages: curl, vim", level="ERROR")
         self.assertEqual(
             self.harness.charm.unit.status, BlockedStatus("Failed to install packages")
         )
