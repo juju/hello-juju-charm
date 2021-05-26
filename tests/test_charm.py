@@ -126,6 +126,14 @@ class TestCharm(unittest.TestCase):
         )
         self.assertEqual(self.harness.charm.unit.status, ActiveStatus())
 
+    def test_on_database_relation_joined(self):
+        # Test first as leader
+        self.harness.set_leader(True)
+        relation = self.harness.add_relation("database")
+        self.assertEqual(
+            self.harness.get_relation_data(relation, self.app.name), {"database", self.app.name}
+        )
+
     @mock.patch("subprocess.call")
     def test_create_database_tables(self, _mock):
         # Define the args that 'check_call' should be called with
