@@ -353,7 +353,15 @@ class TestCharm(unittest.TestCase):
             [
                 call(["python3", "-m", "virtualenv", VENV_ROOT]),
                 call([f"{VENV_ROOT}/bin/pip3", "install", "gunicorn"]),
-                call([f"{VENV_ROOT}/bin/pip3", "install", "-r", f"{APP_PATH}/requirements.txt"]),
+                call(
+                    [
+                        f"{VENV_ROOT}/bin/pip3",
+                        "install",
+                        "-r",
+                        f"{APP_PATH}/requirements.txt",
+                        "--force",
+                    ]
+                ),
             ],
         )
         # Check we render the settings file with the stored connection string

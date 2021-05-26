@@ -149,7 +149,9 @@ class HelloJujuCharm(CharmBase):
         # Install application dependencies
         check_output(["python3", "-m", "virtualenv", VENV_ROOT])
         check_output([f"{VENV_ROOT}/bin/pip3", "install", "gunicorn"])
-        check_output([f"{VENV_ROOT}/bin/pip3", "install", "-r", f"{APP_PATH}/requirements.txt"])
+        check_output(
+            [f"{VENV_ROOT}/bin/pip3", "install", "-r", f"{APP_PATH}/requirements.txt", "--force"]
+        )
 
         # If a connection string exists (and relation is defined) then
         # render the settings file for the new app with the connection details
