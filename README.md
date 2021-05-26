@@ -41,6 +41,10 @@ Machine  State    DNS           Inst id        Series  AZ  Message
 You should be able to visit [http://10.14.25.117](http://10.14.25.117)
 in your browser.
 
+Once you've visited/refreshed a couple of times, visit
+[http://10.14.25.117/greetings](http://10.14.25.117/greetings) to see a count
+of how many times the page has been requested.
+
 ## Using PostgreSQL
 
 To use PostgreSQL as the backing database, deploy the charm, then deploy PostgreSQL
@@ -76,6 +80,9 @@ postgresql:coordinator  postgresql:coordinator  coordinator  peer
 postgresql:db           hello-juju:db           pgsql        regular
 postgresql:replication  postgresql:replication  pgpeer       peer
 ```
+
+The application will behave exactly as before, but now the request store will
+be stored in the PostgreSQL database
 
 ## Development Setup
 
