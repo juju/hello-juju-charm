@@ -118,7 +118,10 @@ class HelloJujuCharm(CharmBase):
         if event.master:
             self.unit.status = MaintenanceStatus("configuring database settings")
             # Store the connection uri in state
-            self._stored.conn_str = event.master.uri
+            # Replace the first part of the URL with pg8000 equivalent
+            self._stored.conn_str = event.master.uri.replace(
+                "postgresql://", "postgresql+pg8000://"
+            )
             # Render the settings file with the database connection details
             self._render_settings_file()
             # Ensure the database tables are created in the master
