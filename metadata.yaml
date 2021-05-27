@@ -2,7 +2,7 @@
 # See LICENSE file for licensing details.
 name: hello-juju
 description: |
-  An introductory charm using the Charmed Operator Framework. Deploys a simply
+  An introductory charm using the Charmed Operator Framework. Deploys a simple
   Python Flask application and implements a relation to PostgreSQL.
 summary: |
   An introductory charm using the Charmed Operator Framework.

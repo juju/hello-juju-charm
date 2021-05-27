@@ -7,7 +7,7 @@ It deploys a simple Python [Flask](https://flask.palletsprojects.com/en/2.0.x/)
 [web application](https://github.com/juju/hello-juju). The application itself is
 simple, and counts the number of times the root URL has been requested and stores the
 count in a database. With no database relation defined, this information is stored in
-a sqlite database.
+a SQLite database.
 
 This charm also supports a [relation](https://juju.is/docs/sdk/relations) to the
 [PostgreSQL charm](https://charmhub.io/postgresql). When this relation is established
@@ -38,12 +38,10 @@ Machine  State    DNS           Inst id        Series  AZ  Message
 0        started  10.14.25.117  juju-9f46aa-0  focal       Running
 ```
 
-You should be able to visit [http://10.14.25.117](http://10.14.25.117)
-in your browser.
-
-Once you've visited/refreshed a couple of times, visit
-[http://10.14.25.117/greetings](http://10.14.25.117/greetings) to see a count
-of how many times the page has been requested.
+With the example above, the page would be available at http://10.14.25.117
+in a browser. Once visited/refreshed a couple of times, the URL
+http://10.14.25.117/greetings would display a count of how many times the page
+has been requested.
 
 ## Using PostgreSQL
 
