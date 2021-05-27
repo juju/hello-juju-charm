@@ -180,11 +180,12 @@ class TestCharm(unittest.TestCase):
         # Trigger the on_database_master_changed event with some data
         test_event = Mock()
         test_event.database = "hello-juju"
-        test_event.master.uri = "TEST"
+        test_event.master.uri = "postgresql://TEST"
 
         # Run the handler
         self.harness.charm._on_database_master_changed(test_event)
-        self.assertEqual(self.harness.charm._stored.conn_str, "TEST")
+        # Check the connection string was updated to use pg8000
+        self.assertEqual(self.harness.charm._stored.conn_str, "postgresql+pg8000://TEST")
         _render.assert_called_once()
         _createdb.assert_called_once()
         _call.assert_called_with(["systemctl", "restart", "hello-juju"])
