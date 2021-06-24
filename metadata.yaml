@@ -6,6 +6,12 @@ description: |
   Python Flask application and implements a relation to PostgreSQL.
 summary: |
   An introductory charm using the Charmed Operator Framework.
+series:
+  - bionic
+  - cosmic
+  - disco
+  - xenial
+  - groovy
 tags:
   - flask
   - web-application
