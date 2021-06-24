@@ -1,0 +1,14 @@
+# Copyright 2021 Canonical
+# See LICENSE file for licensing details.
+#
+# Learn more about config at: https://juju.is/docs/sdk/config
+
+options:
+  application-repo:
+    description: URL to the `hello-juju` application repository
+    type: string
+    default: https://github.com/juju/hello-juju
+  port:
+    description: The port to listen on.
+    type: int
+    default: 80
