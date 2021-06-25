@@ -352,7 +352,7 @@ class TestCharm(unittest.TestCase):
         self.assertEqual(
             _check_output.call_args_list,
             [
-                call(["python3", "-m", "virtualenv", VENV_ROOT]),
+                call(["python3", "-m", "virtualenv", f"{VENV_ROOT}"]),
                 call([f"{VENV_ROOT}/bin/pip3", "install", "gunicorn"]),
                 call(
                     [

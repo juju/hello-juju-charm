@@ -150,7 +150,7 @@ class HelloJujuCharm(CharmBase):
         # Fetch the code using git
         Repo.clone_from(self._stored.repo, APP_PATH)
         # Install application dependencies
-        check_output(["python3", "-m", "virtualenv", VENV_ROOT])
+        check_output(["python3", "-m", "virtualenv", f"{VENV_ROOT}"])
         check_output([f"{VENV_ROOT}/bin/pip3", "install", "gunicorn"])
         check_output(
             [f"{VENV_ROOT}/bin/pip3", "install", "-r", f"{APP_PATH}/requirements.txt", "--force"]

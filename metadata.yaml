@@ -7,11 +7,7 @@ description: |
 summary: |
   An introductory charm using the Charmed Operator Framework.
 series:
-  - bionic
-  - cosmic
-  - disco
-  - xenial
-  - groovy
+  - focal
 tags:
   - flask
   - web-application
