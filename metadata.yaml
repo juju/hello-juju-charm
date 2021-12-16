@@ -8,11 +8,6 @@ summary: |
   An introductory charm using the Charmed Operator Framework.
 series:
   - focal
-tags:
-  - flask
-  - web-application
-  - example
-  - operator-framework
 requires:
   db:
     interface: pgsql
