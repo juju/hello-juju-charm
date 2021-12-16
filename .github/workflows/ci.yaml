@@ -1,0 +1,21 @@
+name: Hello Juju Charm Tests
+
+on: [push, pull_request]
+
+jobs:
+  hello-charm-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run the charm tests
+        run: ./run_tests
