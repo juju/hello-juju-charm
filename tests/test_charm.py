@@ -3,13 +3,13 @@
 #
 # Learn more about testing at: https://juju.is/docs/sdk/testing
 
-import subprocess
 import unittest
 from pathlib import Path
 from unittest import mock
 from unittest.mock import Mock, call, mock_open, patch
 
 from charm import APP_PATH, UNIT_PATH, VENV_ROOT, HelloJujuCharm
+from charms.operator_libs_linux.v0 import apt
 from ops.model import ActiveStatus, BlockedStatus, MaintenanceStatus
 from ops.testing import Harness
 
@@ -67,10 +67,10 @@ class TestCharm(unittest.TestCase):
         _install.assert_called_with(["python3-pip", "python3-virtualenv"])
         _setup.assert_called_once()
         _render.assert_called_once()
-        _call.assert_called_with(["systemctl", "enable", "hello-juju"])
 
+    @mock.patch("charms.operator_libs_linux.v0.systemd.service_resume")
     @mock.patch("charm.check_call")
-    def test_on_start(self, _call):
+    def test_on_start(self, _call, _resume):
         # This would normally have happened during the install event
         self.harness.charm._stored.port = 80
         # Run the handler
@@ -78,15 +78,14 @@ class TestCharm(unittest.TestCase):
         # Ensure we set an ActiveStatus for the charm
         self.assertEqual(self.harness.charm.unit.status, ActiveStatus())
         # Make sure the port is opened and the service is started
-        self.assertEqual(
-            _call.call_args_list,
-            [call(["open-port", "80/TCP"]), call(["systemctl", "start", "hello-juju"])],
-        )
+        self.assertEqual(_call.call_args_list, [call(["open-port", "80/TCP"])])
+        _resume.assert_called_with("hello-juju")
 
+    @mock.patch("charms.operator_libs_linux.v0.systemd.service_restart")
     @mock.patch("charm.check_call")
     @mock.patch("charm.HelloJujuCharm._setup_application")
     @mock.patch("charm.HelloJujuCharm._render_systemd_unit")
-    def test_on_config_changed(self, _render, _setup, _call):
+    def test_on_config_changed(self, _render, _setup, _call, _restart):
         # Check first run, no change to values set by install/start
         self.harness.charm._stored.repo = "https://github.com/juju/hello-juju"
         self.harness.charm._stored.port = 80
@@ -103,14 +102,14 @@ class TestCharm(unittest.TestCase):
         self.assertEqual(self.harness.charm._stored.repo, "DIFFERENT")
         _setup.assert_called_once()
         # This also ensures that the port change code wasn't run
-        _call.assert_called_once()
         _render.assert_not_called()
-        _call.assert_called_with(["systemctl", "restart", "hello-juju"])
+        _restart.assert_called_with("hello-juju")
         self.assertEqual(self.harness.charm.unit.status, ActiveStatus())
 
         # Change the port, should prompt a restart
         _setup.reset_mock()
         _call.reset_mock()
+        _restart.reset_mock()
         self.harness.update_config({"port": 8080})
         self.assertEqual(self.harness.charm._stored.port, 8080)
         _render.assert_called_once()
@@ -121,9 +120,10 @@ class TestCharm(unittest.TestCase):
             [
                 call(["close-port", "80/TCP"]),
                 call(["open-port", "8080/TCP"]),
-                call(["systemctl", "restart", "hello-juju"]),
             ],
         )
+        _restart.assert_called_with("hello-juju")
+
         self.assertEqual(self.harness.charm.unit.status, ActiveStatus())
 
     @mock.patch("pgsql.opslib.pgsql.client._leader_get")
@@ -164,10 +164,11 @@ class TestCharm(unittest.TestCase):
 
     @mock.patch("charm.HelloJujuCharm._render_settings_file")
     @mock.patch("charm.HelloJujuCharm._create_database_tables")
-    @mock.patch("charm.check_call")
+    @mock.patch("charms.operator_libs_linux.v0.systemd.service_restart")
     @mock.patch("pgsql.opslib.pgsql.client._leader_get")
     @mock.patch("pgsql.opslib.pgsql.client._leader_set")
-    def test_on_database_master_changed(self, _leader_set, _leader_get, _call, _createdb, _render):
+    def test_on_database_master_changed(
+            self, _leader_set, _leader_get, _restart, _createdb, _render):
         # Setup the mocks for leader-get and leader-set in the pgsql library
         _leader_get.return_value = {}
         _leader_set.return_value = None
@@ -188,7 +189,7 @@ class TestCharm(unittest.TestCase):
         self.assertEqual(self.harness.charm._stored.conn_str, "postgresql+pg8000://TEST")
         _render.assert_called_once()
         _createdb.assert_called_once()
-        _call.assert_called_with(["systemctl", "restart", "hello-juju"])
+        _restart.assert_called_with("hello-juju")
         self.assertEqual(self.harness.charm.unit.status, ActiveStatus())
 
         # Check where the database hasn't yet been set
@@ -201,13 +202,13 @@ class TestCharm(unittest.TestCase):
 
         # Check where the database hasn't yet been set
         # Reset some stuff
-        _call.reset_mock()
+        _restart.reset_mock()
         test_event = Mock()
         test_event.database = "hello-juju"
         test_event.master = None
         # Run the handler
         self.harness.charm._on_database_master_changed(test_event)
-        _call.assert_not_called()
+        _restart.assert_not_called()
 
     @mock.patch("subprocess.call")
     def test_create_database_tables(self, _mock):
@@ -226,8 +227,8 @@ class TestCharm(unittest.TestCase):
 
     @mock.patch("os.chmod")
     @mock.patch("os.chown")
-    @mock.patch("pwd.getpwnam")
-    def test_render_settings_file(self, _pwnam, _chown, _chmod):
+    @mock.patch("charms.operator_libs_linux.v0.passwd.user_exists")
+    def test_render_settings_file(self, _userexists, _chown, _chmod):
         # Set the value that will be written into the settings file
         self.harness.charm._stored.conn_str = "postgresql://test_connection_string"
 
@@ -238,8 +239,8 @@ class TestCharm(unittest.TestCase):
         # Patch the `open` method with our mock
         with patch("builtins.open", m, create=True):
             # Set the uid/gid return values for lookup of 'www-data' user
-            _pwnam.return_value.pw_uid = 35
-            _pwnam.return_value.pw_gid = 35
+            _userexists.return_value.pw_uid = 35
+            _userexists.return_value.pw_gid = 35
             # Call the method
             self.harness.charm._render_settings_file()
 
@@ -250,15 +251,15 @@ class TestCharm(unittest.TestCase):
         # Ensure the correct rendered template is written to file
         m.return_value.write.assert_called_with(RENDERED_SETTINGS)
         # Ensure that the correct user is lookup up
-        _pwnam.assert_called_with("www-data")
+        _userexists.assert_called_with("www-data")
         # Ensure the file is chmod'd correctly
         _chmod.assert_called_with(f"{APP_PATH}/settings.py", 0o644)
         # Ensure the file is chown'd correctly
         _chown.assert_called_with(f"{APP_PATH}/settings.py", uid=35, gid=35)
 
-    @mock.patch("charm.check_call")
+    @mock.patch("charms.operator_libs_linux.v0.systemd.daemon_reload")
     @mock.patch("os.chmod")
-    def test_render_systemd_unit(self, _chmod, _call):
+    def test_render_systemd_unit(self, _chmod, _reload):
         # Create a mock for the `open` method, set the return value of `read` to
         # the contents of the systemd unit template
         with open("templates/hello-juju.service.j2", "r") as f:
@@ -269,7 +270,7 @@ class TestCharm(unittest.TestCase):
             # Ensure the stored value is clear to test it's set properly
             self.harness.charm._stored.port = ""
             # Mock the return value of the `check_call`
-            _call.return_value = 0
+            _reload.return_value = 0
             # Call the method
             self.harness.charm._render_systemd_unit()
 
@@ -286,7 +287,7 @@ class TestCharm(unittest.TestCase):
         # Check the file permissions are set correctly
         _chmod.assert_called_with(UNIT_PATH, 0o755)
         # Check that systemd is reloaded to register the changes to the unit
-        _call.assert_called_with(["systemctl", "daemon-reload"])
+        _reload.assert_called_once()
 
         # Now check that any existing port in state is respected
         # Patch the `open` method with our mock
@@ -294,28 +295,34 @@ class TestCharm(unittest.TestCase):
             # Ensure the stored value is clear to test it's set properly
             self.harness.charm._stored.port = 8080
             # Mock the return value of the `check_call`
-            _call.return_value = 0
+            _reload.return_value = 0
             # Call the method
             self.harness.charm._render_systemd_unit()
         # Ensure the rendered template is adjusted to take into consideration the port
         m.return_value.write.assert_called_with(RENDERED_SYSTEMD_UNIT.replace(":80", ":8080"))
         self.assertEqual(self.harness.charm._stored.port, 8080)
 
-    @mock.patch("charm.check_output")
-    def test_install_apt_packages(self, _call: Mock):
-        # Set the return code for subprocess.check_output
-        _call.return_code = 0
+    @mock.patch("charms.operator_libs_linux.v0.apt.update")
+    @mock.patch("charms.operator_libs_linux.v0.apt.add_package")
+    # @mock.patch("charm.check_output")
+    def test_install_apt_packages(self, _add_package, _update):
         # Call the method with some packages to install
         self.harness.charm._install_apt_packages(["curl", "vim"])
         # Check that apt is called with the correct arguments
+        _update.assert_called_once()
+        _add_package.assert_called_with(["curl", "vim"])
+        # Now check that if an exception is raised we do the right logging
+        _add_package.reset_mock()
+        _add_package.return_value = 1
+        _add_package.side_effect = apt.PackageNotFoundError
+        self.harness.charm._install_apt_packages(["curl", "vim"])
         self.assertEqual(
-            _call.call_args_list,
-            [call(["apt-get", "update"]), call(["apt-get", "install", "-y", "curl", "vim"])],
+            self.harness.charm.unit.status, BlockedStatus("Failed to install packages")
         )
         # Now check that if an exception is raised we do the right logging
-        _call.reset_mock()
-        _call.return_value = 1
-        _call.side_effect = subprocess.CalledProcessError(1, "apt")
+        _add_package.reset_mock()
+        _add_package.return_value = 1
+        _add_package.side_effect = apt.PackageError
         self.harness.charm._install_apt_packages(["curl", "vim"])
         self.assertEqual(
             self.harness.charm.unit.status, BlockedStatus("Failed to install packages")

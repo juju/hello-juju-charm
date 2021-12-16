@@ -13,12 +13,12 @@ implements a relation to the PostgreSQL charm.
 
 import logging
 import os
-import pwd
 import shutil
 from pathlib import Path
-from subprocess import CalledProcessError, check_call, check_output
+from subprocess import check_call, check_output
 
 import ops.lib
+from charms.operator_libs_linux.v0 import apt, passwd, systemd
 from git import Repo
 from jinja2 import Template
 from ops.charm import CharmBase
@@ -64,13 +64,12 @@ class HelloJujuCharm(CharmBase):
         self._setup_application()
         # Template out the systemd service file
         self._render_systemd_unit()
-        # Enable the systemd unit that drives `hello-juju`
-        check_call(["systemctl", "enable", "hello-juju"])
 
     def _on_start(self, _):
         """Start the workload"""
         check_call(["open-port", f"{self._stored.port}/TCP"])
-        check_call(["systemctl", "start", "hello-juju"])
+        # Enable and start the "hello-juju" systemd unit
+        systemd.service_resume("hello-juju")
         self.unit.status = ActiveStatus()
 
     def _on_config_changed(self, _):
@@ -97,7 +96,7 @@ class HelloJujuCharm(CharmBase):
 
         if restart:
             logger.info("restarting hello-juju application")
-            check_call(["systemctl", "restart", "hello-juju"])
+            systemd.service_restart("hello-juju")
 
         self.unit.status = ActiveStatus()
 
@@ -127,7 +126,7 @@ class HelloJujuCharm(CharmBase):
             # Ensure the database tables are created in the master
             self._create_database_tables()
             # Restart the service
-            check_call(["systemctl", "restart", "hello-juju"])
+            systemd.service_restart("hello-juju")
             # Set back to active status
             self.unit.status = ActiveStatus()
         else:
@@ -167,13 +166,13 @@ class HelloJujuCharm(CharmBase):
     def _install_apt_packages(self, packages: list):
         """Simple wrapper around 'apt-get install -y"""
         try:
-            logger.debug("updating apt cache")
-            check_output(["apt-get", "update"])
-            logger.debug("installing apt packages: %s", ", ".join(packages))
-            check_output(["apt-get", "install", "-y"] + packages)
-        except CalledProcessError as e:
-            logger.error("failed to install packages: %s", ", ".join(packages))
-            logger.debug("apt error: %s", e.output)
+            apt.update()
+            apt.add_package(packages)
+        except apt.PackageNotFoundError:
+            logger.error("a specified package not found in package cache or on system")
+            self.unit.status = BlockedStatus("Failed to install packages")
+        except apt.PackageError:
+            logger.error("could not install package")
             self.unit.status = BlockedStatus("Failed to install packages")
 
     def _render_systemd_unit(self):
@@ -197,7 +196,7 @@ class HelloJujuCharm(CharmBase):
         # Ensure correct permissions are set on the service
         os.chmod(UNIT_PATH, 0o755)
         # Reload systemd units
-        check_call(["systemctl", "daemon-reload"])
+        systemd.daemon_reload()
 
     def _render_settings_file(self):
         """Render the application settings file with database connection details"""
@@ -214,7 +213,7 @@ class HelloJujuCharm(CharmBase):
         # Ensure correct permissions are set on the file
         os.chmod(f"{APP_PATH}/settings.py", 0o644)
         # Get the uid/gid for the www-data user
-        u = pwd.getpwnam("www-data")
+        u = passwd.user_exists("www-data")
         # Set the correct ownership for the settings file
         os.chown(f"{APP_PATH}/settings.py", uid=u.pw_uid, gid=u.pw_gid)
 
